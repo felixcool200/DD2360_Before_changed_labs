@@ -1,3 +1,6 @@
+# Assignment 2
+Github:[https://github.com/felixcool200/DD2360HT23](https://github.com/felixcool200/DD2360HT23)
+
 ## Exercise 1 - Reflection on GPU-accelerated Computing
 1. List the main differences between GPUs and CPUs in terms of architecture.
 
@@ -249,3 +252,9 @@
 
 ## (Bonus) Exercise 5 - GPU Architecture Limitations and New Development
 
+1. What limitations this paper proposes to address
+2. What workloads/applications does it target?
+3. What new architectural changes does it propose? Why it can address the targeted limitation?
+4. What applications are evaluated and how did they setup the evolution environment (e.g., simulators, real hardware, etc)?
+5. Do you have any doubts or comments on their proposed solutions?
+ 
