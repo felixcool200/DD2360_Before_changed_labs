@@ -251,10 +251,17 @@ Github:[https://github.com/felixcool200/DD2360HT23](https://github.com/felixcool
 3. Over all the three workloads the CUDA version ran faster. This is most likley since all the workload were easily parallelizable. When running the programs with fewer iterations/smaller values (for example amount of particles in the particlefilter) the CPU and GPU had comparable speeds but when incresing the amount of particles in parallel the CUDA program ran much faster.
 
 ## (Bonus) Exercise 5 - GPU Architecture Limitations and New Development
-
-1. What limitations this paper proposes to address
-2. What workloads/applications does it target?
-3. What new architectural changes does it propose? Why it can address the targeted limitation?
-4. What applications are evaluated and how did they setup the evolution environment (e.g., simulators, real hardware, etc)?
-5. Do you have any doubts or comments on their proposed solutions?
- 
+<!-- -->
+1. This paper tries to address the problem of (relativly) low high speed memory on GPUs.
+<!-- -->
+2. The paper targets deep learning and HPC workloads.
+<!-- 3. What new architectural changes does it propose? Why it can address the targeted limitation? -->
+3. They propose of this paper is to evaluate and check what memory compression algorithms would work as a memory-expansion alternative. And to be used as a slower-but-larger buddy memory connected thorugh a high-bandwidth interconnect, such as NVLink.
+<!-- 4. What applications are evaluated and how did they setup the evolution environment (e.g., simulators, real hardware, etc)? -->
+4. The mayority of their testing was using 16 different HPC/Deep learning benchmarks that where tested using multiple algortims and while messuring many different things. Thus mostly simulators where used.
+ (They did compare UM and buddy compression on real hardware in one test).
+<!-- 4. Firstly they evaluate how compressable GPU application memory is, by running 16 benchmarks and calculating their compressablilty,
+ Secondly they compare different types of compression algorithms to find a fast and energy efficiant algorthm that results in high compression rates.
+They then also test how much --> 
+<!-- 5. Do you have any doubts or comments on their proposed solutions? -->
+5. I myself does not any any doubts, but I am sceptical to how much of an improvment this will be. As it seems to add a lot of complexity for little gain.  
