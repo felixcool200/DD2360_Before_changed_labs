@@ -20,8 +20,11 @@
         and I used 32*32=1024 CUDA threads.
         
 
-    2. Profile your program with Nvidia Nsight. What Achieved Occupancy did you get? You might find https://docs.nvidia.com/nsight-compute/NsightComputeCli/index.html#nvprof-metric-comparisonLinks to an external site. useful.
+    2. Profile your program with Nvidia Nsight. What Achieved Occupancy did you get? You might find https://docs.nvidia.com/nsight-compute/NsightComputeCli/index.html#nvprof-metric-comparisonLinks. useful.
 
+        I got Achieved Occupancy of 3.12% and a Theoretical Occupancy of 50%.
+
+        When incresing the threads per block from 32 to 64 the Theoretical Occupancy increesed to 100% and the Achieved Occupancy to 6.19%
 
 
 4. Now increase the vector length to 131070:
@@ -37,4 +40,8 @@
 
     3. Profile your program with Nvidia Nsight. What Achieved Occupancy do you get now?
 
+        Achieved Occupancy is now 32.57% (at TPB at 32) and 74.35% (at TPB at 64)
+
+
 5. Further increase the vector length (try 6-10 different vector length), plot a stacked bar chart showing the breakdown of time including (1) data copy from host to device (2) the CUDA kernel (3) data copy from device to host. For this, you will need to add simple CPU timers to your code regions.
+
