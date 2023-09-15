@@ -5,8 +5,9 @@
 
 #include<unistd.h>
 
+#define printCSV true
 
-#define DataType double
+#define DataType float
 #define TPB 32 //32 is max since 32*32 = 1024
 
 // Compute C = A * B
@@ -49,9 +50,13 @@ __global__ void gemmBIG(DataType *A, DataType *B, DataType *C, int numARows,
   int j = blockIdx.y * blockDim.y + threadIdx.y;
 
   if(i < numARows && j < numBColumns){
+    //DataType cval = 0;
     for(int k=0;k<numAColumns;++k){
       C[i*numBColumns+j] += A[i*numAColumns + k] * B[k*numBColumns+j];
+      //cval += A[i*numAColumns + k] * B[k*numBColumns+j];
     }
+    //__syncthreads();
+    //C[i*numBColumns+j] = cval;
   }
 }
 
@@ -83,6 +88,11 @@ int main(int argc, char **argv) {
   DataType *deviceA;
   DataType *deviceB;
   DataType *deviceC;
+
+  double cudaMemcpyHostToDeviceTime = 0;
+  double cudaMemcpyDeviceToHostTime = 0;
+  double kernalLaunchTime = 0;
+
   int numARows;    // number of rows in the matrix A
   int numAColumns; // number of columns in the matrix A
   int numBRows;    // number of rows in the matrix B
@@ -112,8 +122,9 @@ int main(int argc, char **argv) {
       return 0;
   }
   //printf("%s","Error, please enter numARows, numAColumns, numBColumns\n");
-  printf("Input matrix dim (%d x %d) (%d x %d) (%d x %d)\n", numARows, numAColumns, numBRows, numBColumns, numCRows, numCColumns);
-
+  if(!printCSV){
+    printf("Input matrix dim (%d x %d) (%d x %d) (%d x %d)\n", numARows, numAColumns, numBRows, numBColumns, numCRows, numCColumns);
+  }
   //@@ Insert code below to allocate Host memory for input and output
   hostA = (DataType *)malloc(numARows*numAColumns*sizeof(DataType));
   hostB = (DataType *)malloc(numBRows*numBColumns*sizeof(DataType));
@@ -123,7 +134,13 @@ int main(int argc, char **argv) {
 
   srand(time(NULL));   // Initialization
 
-  DataType max = 10000;
+  DataType max = 0;
+  //printf("Size of DataType: %lu\n", sizeof(DataType));
+  if (sizeof(DataType) == 8){
+    max = 10000;
+  }else{
+    max = 100;
+  }
 
   for(int i = 0; i < numARows*numAColumns; ++i){
     hostA[i] =  (DataType)rand() / RAND_MAX * max;
@@ -154,7 +171,10 @@ int main(int argc, char **argv) {
   timerStart();
   cudaMemcpy(deviceA,hostA,numAColumns*numARows*sizeof(DataType),cudaMemcpyHostToDevice);
   cudaMemcpy(deviceB,hostB,numBColumns*numBRows*sizeof(DataType),cudaMemcpyHostToDevice);
-  printf("cudaMemcpyHostToDevice : %f \n",timerStop());
+  cudaMemcpyHostToDeviceTime = timerStop();
+  if(!printCSV){
+    printf("cudaMemcpyHostToDevice : %f \n",cudaMemcpyHostToDeviceTime);
+  }
 
   //@@ Set deviceMemC to 0
   cudaMemset(deviceC,0,numCRows*numCColumns*sizeof(DataType));
@@ -170,7 +190,10 @@ int main(int argc, char **argv) {
       timerStart();
       gemmShared <<< dim3(Dgx,Dgy), dim3(Db), numAColumns*sizeof(DataType)>>>(deviceA, deviceB, deviceC,numARows,numAColumns, numBRows, numBColumns);
       cudaDeviceSynchronize();
-      printf("First method (no atomic) took: %f \n",timerStop());
+      kernalLaunchTime = timerStop();
+      if(!printCSV){
+        printf("First method (no atomic) took: %f \n",kernalLaunchTime);
+      }
   } else if (method == 1){
       int Dgx = numCRows;
       int Dgy = numCColumns;
@@ -178,7 +201,10 @@ int main(int argc, char **argv) {
       timerStart();
       gemmAtomicAdd <<< dim3(Dgx,Dgy), dim3(Dbx)>>>(deviceA, deviceB, deviceC,numARows,numAColumns, numBRows, numBColumns);
       cudaDeviceSynchronize();
-      printf("First method (atmoic) took: %f \n",timerStop());
+      kernalLaunchTime = timerStop();
+      if(!printCSV){
+        printf("First method (atmoic) took: %f \n",kernalLaunchTime);
+      }
   } else if (method == 2){
       int Dgx = (numCRows+TPB-1)/TPB;
       int Dgy = (numCColumns+TPB-1)/TPB;
@@ -188,7 +214,10 @@ int main(int argc, char **argv) {
       timerStart();
       gemmBIG <<< dim3(Dgx,Dgy), dim3(Dbx,Dby)>>>(deviceA,deviceB, deviceC,numARows,numAColumns, numBRows, numBColumns);
       cudaDeviceSynchronize();
-      printf("Second method took: %f \n",timerStop());
+      kernalLaunchTime = timerStop();
+      if(!printCSV){
+        printf("Second method took: %f \n",kernalLaunchTime);
+      }
   }
   else{
     printf("Method not defined!");
@@ -198,19 +227,29 @@ int main(int argc, char **argv) {
   //@@ Copy the GPU memory back to the CPU here
   timerStart();
   cudaMemcpy(hostC, deviceC, numCRows*numCColumns*sizeof(DataType), cudaMemcpyDeviceToHost);
-  printf("cudaMemcpyDeviceToHost : %f \n",timerStop());
+  cudaMemcpyDeviceToHostTime = timerStop();
+  if(!printCSV){
+    printf("cudaMemcpyDeviceToHost : %f \n",cudaMemcpyDeviceToHostTime);
+  }
+  DataType tolerance = 0;
+  if (sizeof(DataType) == 8){
+    tolerance = 0.0001;
+  }else{
+      tolerance = 10;
+  }
+
 
   //@@ Insert code below to compare the output with the reference
   bool diff = false;
     for(int i = 0; i < numCRows*numCColumns;++i){
-      if((abs(resultRef[i] - hostC[i])) > 0.001){
+      if((abs(resultRef[i] - hostC[i])) > tolerance){
         printf("Not equal diffs at %d\n",i);
         printf("HOST IS: %f, DEVICE IS: %f\n", resultRef[i], hostC[i]);
         diff = true;
       }
     }
 
-  if(!diff){
+  if(!diff && !printCSV){
     printf("Outputs are the same\n");
   }
 
@@ -228,7 +267,14 @@ int main(int argc, char **argv) {
 
   /*timerStart();
   sleep(5);
-  printf("Timer test: %f \n",timerStop());*/
+  if(!printCSV){
+    printf("Timer test: %f \n",timerStop());
+  }
+  */
+  if(printCSV){
+    printf("(%d x %d) (%d x %d) (%d x %d)", numARows, numAColumns, numBRows, numBColumns, numCRows, numCColumns);
+    printf(", %f, %f, %f\n",cudaMemcpyHostToDeviceTime,kernalLaunchTime, cudaMemcpyDeviceToHostTime);
+  }
 
   return 0;
 }
