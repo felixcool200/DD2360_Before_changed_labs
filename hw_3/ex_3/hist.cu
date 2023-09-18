@@ -55,13 +55,72 @@ __global__ void histogram_kernel_par_tmp(unsigned int *input, unsigned int *bins
 
     __syncthreads();
 
-    for(int i = 0; i < NUM_BINS/TPB,++i){
+    for(int i = 0; i < NUM_BINS/TPB;++i){
       if(temp_bins[TPB * i + threadIdx.x] != 0){
         atomicAdd(&(bins[TPB * i + threadIdx.x]),temp_bins[TPB * i + threadIdx.x]);
       }
     }
   }
 }
+
+__global__ void histogram_kernel_par_both(unsigned int *input, unsigned int *bins,
+                                 unsigned int num_elements){/*,
+                                 unsigned int num_bins) {*/
+
+//@@ Insert code below to compute histogram of input using shared memory and atomics
+
+  __shared__ unsigned int temp_bins[NUM_BINS];
+  int index = blockIdx.x * blockDim.x + threadIdx.x;
+  
+  for(int i = 0; i < NUM_BINS/TPB;++i){
+    temp_bins[i*TPB+blockIdx.x] = 0;
+  }
+  __syncthreads();
+
+  if (index < num_elements){
+
+    //printf("%d\n",index);
+
+    atomicAdd(&temp_bins[input[index]],1);
+
+    __syncthreads();
+
+    for(int i = 0; i < NUM_BINS/TPB;++i){
+      if(temp_bins[TPB * i + threadIdx.x] != 0){
+        atomicAdd(&(bins[TPB * i + threadIdx.x]),temp_bins[TPB * i + threadIdx.x]);
+      }
+    }
+  }
+}
+
+__global__ void histogram_kernel_par_both_no_if(unsigned int *input, unsigned int *bins,
+                                 unsigned int num_elements){/*,
+                                 unsigned int num_bins) {*/
+
+//@@ Insert code below to compute histogram of input using shared memory and atomics
+
+  __shared__ unsigned int temp_bins[NUM_BINS];
+  int index = blockIdx.x * blockDim.x + threadIdx.x;
+  
+  for(int i = 0; i < NUM_BINS/TPB;++i){
+    temp_bins[i*TPB+blockIdx.x] = 0;
+  }
+  __syncthreads();
+
+  if (index < num_elements){
+
+    //printf("%d\n",index);
+
+    atomicAdd(&temp_bins[input[index]],1);
+
+    __syncthreads();
+
+    for(int i = 0; i < NUM_BINS/TPB;++i){
+        atomicAdd(&(bins[TPB * i + threadIdx.x]),temp_bins[TPB * i + threadIdx.x]);
+    }
+  }
+}
+
 
 __global__ void histogram_kernel_par_memset(unsigned int *input, unsigned int *bins,
                                  unsigned int num_elements){/*,
@@ -71,9 +130,9 @@ __global__ void histogram_kernel_par_memset(unsigned int *input, unsigned int *b
 
   __shared__ unsigned int temp_bins[NUM_BINS];
   int index = blockIdx.x * blockDim.x + threadIdx.x;
-    for(int i = 0; i < NUM_BINS/TPB,++i){
-      temp_bins[i*TPB+blockIdx.x] = 0;
-    }
+  for(int i = 0; i < NUM_BINS/TPB;++i){
+    temp_bins[i*TPB+blockIdx.x] = 0;
+  }
   __syncthreads();
 
   if (index < num_elements){
@@ -181,7 +240,7 @@ int main(int argc, char **argv) {
 
   //@@ Launch the GPU Kernel here
   timerStart();
-  histogram_kernel_par_tmp <<<grid1,block1>>> (deviceInput,deviceBins,inputLength);
+  histogram_kernel_par_both_no_if <<<grid1,block1>>> (deviceInput,deviceBins,inputLength);
   cudaDeviceSynchronize();
   //@@ Initialize the second grid and block dimensions here
 
