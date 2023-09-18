@@ -133,3 +133,201 @@
     ![Float gemmShared](/report/Float%20gemmShared.svg)
     ![Float gemmAtomicAdd](/report/Float%20gemmAtomicAdd.svg)
     ![Float gemmBIG](/report/Float%20gemmBIG.svg)
+
+
+## Exercise 3 - Histogram and Atomics
+
+1. Describe all optimizations you tried regardless of whether you committed to them or abandoned them and whether they improved or hurt performance.
+
+    my first implementation looked like this:
+    Here I already done som optimizations. Such as removing num_bins as a parameter since it is a compile time constant.
+    ``` cpp 
+    __global__ void histogram_kernel(unsigned int *input, unsigned int *bins, unsigned int num_elements){
+
+        __shared__ unsigned int temp_bins[NUM_BINS];
+        int index = blockIdx.x * blockDim.x + threadIdx.x;
+        if (index < num_elements){
+            if(threadIdx.x == 0){
+            for(int i = 0; i < NUM_BINS;++i){
+                temp_bins[i] = 0;
+            }
+            }
+            __syncthreads();
+
+            atomicAdd(&temp_bins[input[index]],1);
+
+            __syncthreads();
+            if(threadIdx.x == 0){
+                for(int i = 0; i < NUM_BINS; ++i){
+                    atomicAdd(&(bins[i]),temp_bins[i]);
+                }
+            }
+        }
+    }
+    ```
+    this had a kernal run time of: 0.001512 s (with input set to 1 000 000)
+
+    I then tried to paralize the creation of the shared variable
+
+    ```cpp
+    __global__ void histogram_kernel(unsigned int *input, unsigned int *bins, unsigned int num_elements){
+
+        __shared__ unsigned int temp_bins[NUM_BINS];
+        int index = blockIdx.x * blockDim.x + threadIdx.x;
+        for(int i = 0; i < NUM_BINS/TPB;++i){
+            temp_bins[i*TPB+blockIdx.x] = 0;
+        }
+        __syncthreads();
+
+        if (index < num_elements){
+
+            atomicAdd(&temp_bins[input[index]],1);
+
+            __syncthreads();
+        }
+
+        if(threadIdx.x == 0){
+            for(int i = 0; i < NUM_BINS; ++i){
+                unsigned int tmp = temp_bins[i];
+                if(tmp != 0){
+                    atomicAdd(&(bins[i]),tmp);
+                }
+            }
+        }
+    }
+    ```
+
+
+    this had a kernal run time of: 0.005442 s (with input set to 1 000 000).
+
+    Then I tried to instead parallelize the adding the temporary shared variable to the global variable.
+
+
+    ``` cpp 
+    __global__ void histogram_kernel(unsigned int *input, unsigned int *bins, unsigned int num_elements){
+
+        __shared__ unsigned int temp_bins[NUM_BINS];
+        int index = blockIdx.x * blockDim.x + threadIdx.x;
+        if (index < num_elements){
+            if(threadIdx.x == 0){
+            for(int i = 0; i < NUM_BINS;++i){
+                temp_bins[i] = 0;
+            }
+            }
+            __syncthreads();
+
+            atomicAdd(&temp_bins[input[index]],1);
+
+            __syncthreads();
+
+            for(int i = 0; i < NUM_BINS/TPB;++i){
+                if(temp_bins[TPB * i + threadIdx.x] != 0){
+                    atomicAdd(&(bins[TPB * i + threadIdx.x]),temp_bins[TPB * i + threadIdx.x]);
+                }
+            }
+        }
+    }
+    ```
+    this had a kernal run time of: 0.000394 s (with input set to 1 000 000).
+    
+    I then tried to combine the last two attempts and it resulted in the fastest kernal I was able to create.
+    ```cpp
+    __global__ void histogram_kernel(unsigned int *input, unsigned int *bins, unsigned int num_elements){
+
+        __shared__ unsigned int temp_bins[NUM_BINS];
+        int index = blockIdx.x * blockDim.x + threadIdx.x;
+        
+        for(int i = 0; i < NUM_BINS/TPB;++i){
+            temp_bins[i*TPB+blockIdx.x] = 0;
+        }
+        __syncthreads();
+
+        if (index < num_elements){
+
+            atomicAdd(&temp_bins[input[index]],1);
+
+            __syncthreads();
+
+            for(int i = 0; i < NUM_BINS/TPB;++i){
+                if(temp_bins[TPB * i + threadIdx.x] != 0){
+                    atomicAdd(&(bins[TPB * i + threadIdx.x]),temp_bins[TPB * i + threadIdx.x]);
+                }
+            }
+        }
+    }
+    ```
+    this had a kernal run time of: 0.000170 s (with input set to 1 000 000). (This time is similar to how fast it takes to launch the cpu timer thus it is very hard to see any further improvments).
+
+    
+    Lastly I tried to remove the if statment around the atomic add (to simply add the zeros aswell)
+
+    ```cpp
+    __global__ void histogram_kernel(unsigned int *input, unsigned int *bins, unsigned int num_elements){
+
+        __shared__ unsigned int temp_bins[NUM_BINS];
+        int index = blockIdx.x * blockDim.x + threadIdx.x;
+        
+        for(int i = 0; i < NUM_BINS/TPB;++i){
+            temp_bins[i*TPB+blockIdx.x] = 0;
+        }
+        __syncthreads();
+
+        if (index < num_elements){
+
+            atomicAdd(&temp_bins[input[index]],1);
+
+            __syncthreads();
+
+            for(int i = 0; i < NUM_BINS/TPB;++i){
+                atomicAdd(&(bins[TPB * i + threadIdx.x]),temp_bins[TPB * i + threadIdx.x]);
+            }
+        }
+        }
+    ```
+    This had a simiar time to the last sulotion so I decided to keep the if statment.
+
+2. Which optimizations you chose in the end and why? 
+    This is my final kernal. I applied both parralization to the setting the shared memory to zero and adding the shared variable to the global memory.
+    ```cpp
+    __global__ void histogram_kernel(unsigned int *input, unsigned int *bins, unsigned int num_elements){
+
+        __shared__ unsigned int temp_bins[NUM_BINS];
+        int index = blockIdx.x * blockDim.x + threadIdx.x;
+        
+        for(int i = 0; i < NUM_BINS/TPB;++i){
+            temp_bins[i*TPB+blockIdx.x] = 0;
+        }
+        __syncthreads();
+
+        if (index < num_elements){
+
+            atomicAdd(&temp_bins[input[index]],1);
+
+            __syncthreads();
+
+            for(int i = 0; i < NUM_BINS/TPB;++i){
+                if(temp_bins[TPB * i + threadIdx.x] != 0){
+                    atomicAdd(&(bins[TPB * i + threadIdx.x]),temp_bins[TPB * i + threadIdx.x]);
+                }
+            }
+        }
+    }
+    ```
+3. How many global memory reads are being performed by your kernel? Explain 
+    
+    Only a single global memory read is done (per thread), this is when temp_bin is indexed by input. All other reads are from the shared memory. (I create inputLength threads thus inputLength is the amount of total global memory reads.)
+
+4. How many atomic operations are being performed by your kernel? Explain
+
+    There are two atomicAdd operations per thread thus 2* inputLength in total.
+
+5. How much shared memory is used in your code? Explain
+    I create an unsiged int array of size 4096, Thus 4096\*8 = 32768 bytes are used per block. Since there is 1024 threads per block there is a always 4 blocks (4096/1024 = 4). Thus 32768\*4 = 131072 bytes are used in total.
+
+6. How would the value distribution of the input array affect the contention among threads? For instance, what contentions would you expect if every element in the array has the same value? 
+
+    If every element would need to be placed in a single bucket. All threads needs to write (atomicAdd) to the same shared memory location and thus have to wait for each other to not create corrupted memory or a datarace. 
+
+7. Plot a histogram generated by your code and specify your input length, thread block and grid.
+
+8. For a input array of 1024 elements, profile with Nvidia Nsight and report Shared Memory Configuration Size and Achieved Occupancy. Did Nvsight report any potential performance issues?
