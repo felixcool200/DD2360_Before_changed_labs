@@ -377,8 +377,19 @@
             !./sputniPIC.out /content/sputniPIC-DD2360/inputfiles/GEM_2D.inp 
 2. Describe your design of the GPU implementation of mover_PC() briefly. 
 
-    Firstly I removed the
+    I decided on to parallelize the for loop responsable for each particle. The inner loops seem hard to parallelize since they depend on each other and are inherintly iterative.
+
 3. Compare the output of both CPU and GPU implementation to guarantee that your GPU implementations produce correct answers.
+
+    To compare the outputs I used the ```diff``` command to test the output files against each other. 
+    
+            !diff /content/sputniPIC-DD2360/bin/data/B_10.vtk /content/sputniPIC-DD2360/bin/data_GPU/B_10.vtk
+            !diff /content/sputniPIC-DD2360/bin/data/rhoe_10.vtk /content/sputniPIC-DD2360/bin/data_GPU/rhoe_10.vtk
+            !diff /content/sputniPIC-DD2360/bin/data/rho_net_10.vtk /content/sputniPIC-DD2360/bin/data_GPU/rho_net_10.vtk
+            !diff /content/sputniPIC-DD2360/bin/data/E_10.vtk /content/sputniPIC-DD2360/bin/data_GPU/E_10.vtk
+            !diff /content/sputniPIC-DD2360/bin/data/rhoi_10.vtk /content/sputniPIC-DD2360/bin/data_GPU/rhoi_10.vtk
+            !diff /content/sputniPIC-DD2360/bin/data/sputniPICparameters.txt /content/sputniPIC-DD2360/bin/data_GPU/sputniPICparameters.txt
+
 4. Compare the execution time of your GPU implementation with its CPU version.
 
     CPU:
@@ -389,3 +400,8 @@
     **************************************
 
     GPU:
+    **************************************
+   Tot. Simulation Time (s) = 28.7672
+   Mover Time / Cycle   (s) = 0.0432936
+   Interp. Time / Cycle (s) = 2.46405
+**************************************
