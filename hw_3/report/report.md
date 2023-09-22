@@ -141,20 +141,22 @@
 
     my first implementation looked like this:
     Here I already done som optimizations. Such as removing num_bins as a parameter since it is a compile time constant.
+
     ``` cpp 
     __global__ void histogram_kernel(unsigned int *input, unsigned int *bins, unsigned int num_elements){
 
         __shared__ unsigned int temp_bins[NUM_BINS];
         int index = blockIdx.x * blockDim.x + threadIdx.x;
-        if (index < num_elements){
             if(threadIdx.x == 0){
-            for(int i = 0; i < NUM_BINS;++i){
-                temp_bins[i] = 0;
-            }
+                for(int i = 0; i < NUM_BINS;++i){
+                    temp_bins[i] = 0;
+                }
             }
             __syncthreads();
 
-            atomicAdd(&temp_bins[input[index]],1);
+            if (index < num_elements){
+                atomicAdd(&temp_bins[input[index]],1);
+            }
 
             __syncthreads();
             if(threadIdx.x == 0){
@@ -162,7 +164,7 @@
                     atomicAdd(&(bins[i]),temp_bins[i]);
                 }
             }
-        }
+
     }
     ```
     this had a kernal run time of: 0.001512 s (with input set to 1 000 000)
@@ -175,16 +177,16 @@
         __shared__ unsigned int temp_bins[NUM_BINS];
         int index = blockIdx.x * blockDim.x + threadIdx.x;
         for(int i = 0; i < NUM_BINS/TPB;++i){
-            temp_bins[i*TPB+blockIdx.x] = 0;
+            temp_bins[i*TPB+threadIdx.x] = 0;
         }
         __syncthreads();
 
         if (index < num_elements){
 
             atomicAdd(&temp_bins[input[index]],1);
-
-            __syncthreads();
         }
+
+        __syncthreads();
 
         if(threadIdx.x == 0){
             for(int i = 0; i < NUM_BINS; ++i){
@@ -208,22 +210,21 @@
 
         __shared__ unsigned int temp_bins[NUM_BINS];
         int index = blockIdx.x * blockDim.x + threadIdx.x;
-        if (index < num_elements){
-            if(threadIdx.x == 0){
+        if(threadIdx.x == 0){
             for(int i = 0; i < NUM_BINS;++i){
                 temp_bins[i] = 0;
             }
-            }
-            __syncthreads();
+        }
+        __syncthreads();
 
+        if (index < num_elements){
             atomicAdd(&temp_bins[input[index]],1);
+        }
+         __syncthreads();
 
-            __syncthreads();
-
-            for(int i = 0; i < NUM_BINS/TPB;++i){
-                if(temp_bins[TPB * i + threadIdx.x] != 0){
-                    atomicAdd(&(bins[TPB * i + threadIdx.x]),temp_bins[TPB * i + threadIdx.x]);
-                }
+        for(int i = 0; i < NUM_BINS/TPB;++i){
+            if(temp_bins[TPB * i + threadIdx.x] != 0){
+                atomicAdd(&(bins[TPB * i + threadIdx.x]),temp_bins[TPB * i + threadIdx.x]);
             }
         }
     }
@@ -238,20 +239,18 @@
         int index = blockIdx.x * blockDim.x + threadIdx.x;
         
         for(int i = 0; i < NUM_BINS/TPB;++i){
-            temp_bins[i*TPB+blockIdx.x] = 0;
+            temp_bins[i*TPB+threadIdx.x] = 0;
         }
         __syncthreads();
 
         if (index < num_elements){
-
             atomicAdd(&temp_bins[input[index]],1);
+        }
+        __syncthreads();
 
-            __syncthreads();
-
-            for(int i = 0; i < NUM_BINS/TPB;++i){
-                if(temp_bins[TPB * i + threadIdx.x] != 0){
-                    atomicAdd(&(bins[TPB * i + threadIdx.x]),temp_bins[TPB * i + threadIdx.x]);
-                }
+        for(int i = 0; i < NUM_BINS/TPB;++i){
+            if(temp_bins[TPB * i + threadIdx.x] != 0){
+                atomicAdd(&(bins[TPB * i + threadIdx.x]),temp_bins[TPB * i + threadIdx.x]);
             }
         }
     }
@@ -268,21 +267,19 @@
         int index = blockIdx.x * blockDim.x + threadIdx.x;
         
         for(int i = 0; i < NUM_BINS/TPB;++i){
-            temp_bins[i*TPB+blockIdx.x] = 0;
+            temp_bins[i*TPB+threadIdx.x] = 0;
         }
         __syncthreads();
 
         if (index < num_elements){
-
             atomicAdd(&temp_bins[input[index]],1);
-
-            __syncthreads();
-
-            for(int i = 0; i < NUM_BINS/TPB;++i){
-                atomicAdd(&(bins[TPB * i + threadIdx.x]),temp_bins[TPB * i + threadIdx.x]);
-            }
         }
+        __syncthreads();
+
+        for(int i = 0; i < NUM_BINS/TPB;++i){
+            atomicAdd(&(bins[TPB * i + threadIdx.x]),temp_bins[TPB * i + threadIdx.x]);
         }
+    }
     ```
     This had a simiar time to the last sulotion so I decided to keep the if statment.
 
@@ -295,20 +292,18 @@
         int index = blockIdx.x * blockDim.x + threadIdx.x;
         
         for(int i = 0; i < NUM_BINS/TPB;++i){
-            temp_bins[i*TPB+blockIdx.x] = 0;
+            temp_bins[i*TPB+threadIdx.x] = 0;
         }
         __syncthreads();
 
         if (index < num_elements){
-
             atomicAdd(&temp_bins[input[index]],1);
+        }
+        __syncthreads();
 
-            __syncthreads();
-
-            for(int i = 0; i < NUM_BINS/TPB;++i){
-                if(temp_bins[TPB * i + threadIdx.x] != 0){
-                    atomicAdd(&(bins[TPB * i + threadIdx.x]),temp_bins[TPB * i + threadIdx.x]);
-                }
+        for(int i = 0; i < NUM_BINS/TPB;++i){
+            if(temp_bins[TPB * i + threadIdx.x] != 0){
+                atomicAdd(&(bins[TPB * i + threadIdx.x]),temp_bins[TPB * i + threadIdx.x]);
             }
         }
     }
@@ -326,8 +321,71 @@
 
 6. How would the value distribution of the input array affect the contention among threads? For instance, what contentions would you expect if every element in the array has the same value? 
 
-    If every element would need to be placed in a single bucket. All threads needs to write (atomicAdd) to the same shared memory location and thus have to wait for each other to not create corrupted memory or a datarace. 
+    If every element would need to be placed in a single bucket. All threads needs to write (atomicAdd) to the same shared memory location and thus have to wait for each other to not create corrupted memory or a datarace. This would remove most of the gains of parallizing the code in the first place since all threads in a block would have to wait for each other. It would still be in parallel across the 4 different blocks.
 
 7. Plot a histogram generated by your code and specify your input length, thread block and grid.
 
+    Histogram with input length of 200 000 with a 1024 threads per block and 4 total blocks.
+    ![Histogram](/report/hist_200000_1024.png)
+
+
 8. For a input array of 1024 elements, profile with Nvidia Nsight and report Shared Memory Configuration Size and Achieved Occupancy. Did Nvsight report any potential performance issues?
+
+    For histogram_kernel:
+
+        Achieved Occupancy: 48.52%
+        Shared Memory Configuration Size: 32.77 Kbyte.
+    
+    Nsight gave the following warnings
+
+    "This kernel grid is too small to fill the available resources on this device, resulting in only 0.0 full waves across all SMs. Look at Launch Statistics for more details."
+
+    and          
+
+    "The grid for this launch is configured to execute only 2 blocks, which is less than the GPU's 40 multiprocessors. This can underutilize some multiprocessors. If you do not intend to execute this kernel concurrently with other workloads, consider reducing the block size to have at least one block per multiprocessor or increase the size of the grid to fully utilize the available hardware resources. See the Hardware Model (https://docs.nvidia.com/nsight-compute/ProfilingGuide/index.html#metrics-hw-model) description for more details on launch configurations."
+
+    and 
+
+    "This kernel's theoretical occupancy is not impacted by any block limit. The difference between calculated theoretical (100.0%) and measured achieved occupancy (48.5%) can be the result of warp scheduling overheads or workload imbalances during the kernel execution. Load imbalances can occur between warps within a block as well as across blocks of the same kernel. See the CUDA Best Practices Guide (https://docs.nvidia.com/cuda/cuda-c-best-practices-guide/index.html#occupancy) for more details on optimizing occupancy."
+
+    for convert_kernel:
+
+        Achieved Occupancy: 48.01%
+        Shared Memory Configuration Size: 32.77 Kbyte.
+
+    "This kernel grid is too small to fill the available resources on this device, resulting in only 0.1 full waves across all SMs. Look at Launch Statistics for more details. "
+
+    and
+
+    "The grid for this launch is configured to execute only 8 blocks, which is less than the GPU's 40 multiprocessors. This can underutilize some multiprocessors. If you do not intend to execute this kernel concurrently with other workloads, consider reducing the block size to have at least one block per multiprocessor or increase the size of the grid to fully utilize the available hardware resources. See the Hardware Model (https://docs.nvidia.com/nsight-compute/ProfilingGuide/index.html#metrics-hw-model) description for more details on launch configurations"
+
+    and
+
+    "This kernel's theoretical occupancy is not impacted by any block limit. The difference between calculated theoretical (100.0%) and measured achieved occupancy (48.0%) can be the result of warp scheduling overheads or workload imbalances during the kernel execution. Load imbalances can occur between warps within a block as well as across blocks of the same kernel. See the CUDA Best Practices Guide (https://docs.nvidia.com/cuda/cuda-c-best-practices-guide/index.html#occupancy) for more details on optimizing occupancy."
+
+
+## Exercise 4 - A Particle Simulation Application
+1. Describe the environment you used, what changes you made to the Makefile, and how you ran the simulation.
+
+    I ran the code on google colab. The only change was to change the cuda compatability from 3.0 to 6.1. (ARCH=sm_30 to ARCH=sm_61 in Makefile).
+
+    To run the simulation i ran the following commands on colab.
+
+            %cd /content/sputniPIC-DD2360/
+            !make
+            %cd /content/sputniPIC-DD2360/bin
+            !./sputniPIC.out /content/sputniPIC-DD2360/inputfiles/GEM_2D.inp 
+2. Describe your design of the GPU implementation of mover_PC() briefly. 
+
+    Firstly I removed the
+3. Compare the output of both CPU and GPU implementation to guarantee that your GPU implementations produce correct answers.
+4. Compare the execution time of your GPU implementation with its CPU version.
+
+    CPU:
+    **************************************
+   Tot. Simulation Time (s) = 60.4837
+   Mover Time / Cycle   (s) = 3.24923
+   Interp. Time / Cycle (s) = 2.50258
+    **************************************
+
+    GPU:
