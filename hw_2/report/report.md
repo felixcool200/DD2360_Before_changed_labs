@@ -1,6 +1,8 @@
 # Assignment 2
 Github:[https://github.com/felixcool200/DD2360HT23](https://github.com/felixcool200/DD2360HT23)
 
+##### Felix Söderman DD2360 HT23
+
 ## Exercise 1 - Reflection on GPU-accelerated Computing
 1. List the main differences between GPUs and CPUs in terms of architecture.
 
