@@ -524,4 +524,4 @@ Github:[https://github.com/felixcool200/DD2360HT23](https://github.com/felixcool
 
     Here we see that the majority of the mover times has been removed. With the ten cycles we use here we can see that the total mover time went from 32.4s to 0.4s.
     
-    The next step in improving the code would be to parallelize Interp since it is now the main part of the total simulation time 24s out of the 28s.
+    The next step in improving the code would be to parallelize the interpolation, since it is now the main part of the total simulation time and takes 24s out of the total 28s.
