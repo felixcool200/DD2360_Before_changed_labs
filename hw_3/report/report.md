@@ -371,37 +371,89 @@
 
     To run the simulation i ran the following commands on colab.
 
+            !git clone https://github.com/KTH-HPC/sputniPIC-DD2360.git
+            !cp /content/sputniPIC-DD2360/src/Particles.cu /content/ParticlesCPU.cu 
+
+            ==================== GPU ====================
+            !cp /content/ParticlesGPU.cu /content/sputniPIC-DD2360/src/Particles.cu
+
             %cd /content/sputniPIC-DD2360/
             !make
             %cd /content/sputniPIC-DD2360/bin
-            !./sputniPIC.out /content/sputniPIC-DD2360/inputfiles/GEM_2D.inp 
+            !mkdir -p data
+            !./sputniPIC.out /content/sputniPIC-DD2360/inputfiles/GEM_2D.inp
+            %cd /content
+
+            !mv /content/sputniPIC-DD2360/bin/data/ /content/sputniPIC-DD2360/bin/data_GPU/
+
+            # ==================== CPU ====================
+            !cp /content/ParticlesCPU.cu /content/sputniPIC-DD2360/src/Particles.cu
+
+            %cd /content/sputniPIC-DD2360/
+            !make
+            %cd /content/sputniPIC-DD2360/bin
+            !mkdir -p data
+            !./sputniPIC.out /content/sputniPIC-DD2360/inputfiles/GEM_2D.inp
+            %cd /content
 2. Describe your design of the GPU implementation of mover_PC() briefly. 
 
     I decided on to parallelize the for loop responsable for each particle. The inner loops seem hard to parallelize since they depend on each other and are inherintly iterative.
 
 3. Compare the output of both CPU and GPU implementation to guarantee that your GPU implementations produce correct answers.
 
-    To compare the outputs I used the ```diff``` command to test the output files against each other. 
-    
-            !diff /content/sputniPIC-DD2360/bin/data/B_10.vtk /content/sputniPIC-DD2360/bin/data_GPU/B_10.vtk
-            !diff /content/sputniPIC-DD2360/bin/data/rhoe_10.vtk /content/sputniPIC-DD2360/bin/data_GPU/rhoe_10.vtk
-            !diff /content/sputniPIC-DD2360/bin/data/rho_net_10.vtk /content/sputniPIC-DD2360/bin/data_GPU/rho_net_10.vtk
-            !diff /content/sputniPIC-DD2360/bin/data/E_10.vtk /content/sputniPIC-DD2360/bin/data_GPU/E_10.vtk
-            !diff /content/sputniPIC-DD2360/bin/data/rhoi_10.vtk /content/sputniPIC-DD2360/bin/data_GPU/rhoi_10.vtk
-            !diff /content/sputniPIC-DD2360/bin/data/sputniPICparameters.txt /content/sputniPIC-DD2360/bin/data_GPU/sputniPICparameters.txt
+    To compare the outputs I used the wrote a python script that compares the output files against each other (Since the results are float there is a epsilon that allows for small differences in the output). 
+
+
+    ```python
+    files = ["B_10.vtk","E_10.vtk","sputniPICparameters.txt","rhoe_10.vtk","rho_net_10.vtk","rhoi_10.vtk"]
+    EPSILON = 0.02
+
+    def compare():
+    for file in files:
+        print("FILE:",file)
+        GPU = open("/content/sputniPIC-DD2360/bin/data_GPU/" + file, "r").read().split()
+        CPU = open("/content/sputniPIC-DD2360/bin/data/" + file, "r").read().split()
+        if len(CPU) != len(GPU):
+        print("Error diff length, not the same")
+        return
+        else:
+        for i in range(len(GPU)):
+            try:
+            fGPU = float(GPU[i])
+            fCPU = float(CPU[i])
+            diff = abs(fGPU - fCPU)
+            if(abs(fGPU - fCPU) >= EPSILON):
+                print("Error to big diff")
+                return
+            except ValueError: 
+            if(GPU[i] != CPU[i]):
+                print("Error not equal",GPU[i],CPU[i])
+                return
+    compare()
+    ```
+
+    The output differs since the datatypes are full precision and only allows a limited resolution.
 
 4. Compare the execution time of your GPU implementation with its CPU version.
 
     CPU:
     **************************************
    Tot. Simulation Time (s) = 60.4837
+
    Mover Time / Cycle   (s) = 3.24923
+
    Interp. Time / Cycle (s) = 2.50258
     **************************************
 
     GPU:
     **************************************
    Tot. Simulation Time (s) = 28.7672
+
    Mover Time / Cycle   (s) = 0.0432936
+
    Interp. Time / Cycle (s) = 2.46405
-**************************************
+    **************************************
+
+    Here we see that the majority of the mover times has been removed. With the ten cycles we use here we can see that the total mover time went from 32.4s to 0.4s.
+    
+    The next step in improving the code would be to parallelize Interp since it is now the main part of the total simulation time 24s out of the 28s.

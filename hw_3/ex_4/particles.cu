@@ -250,6 +250,7 @@ int mover_PC(struct particles* part, struct EMfield* field, struct grid* grd, st
     //for (int i=0; i <  part->nop; i++){}
     //} // end of one particle
     int TPB = 64;
+    std::cout << part->nop << std::endl;
     dim3 grid((part->nop + TPB - 1)/TPB);
     dim3 block(TPB);
 
