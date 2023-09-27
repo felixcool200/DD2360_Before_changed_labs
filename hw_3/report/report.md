@@ -1,5 +1,5 @@
 # Assignment 3
-Github:[https://github.com/felixcool200/DD2360HT23](https://github.com/felixcool200/DD2360HT23)
+Github: https://github.com/felixcool200/DD2360HT23
 
 ##### Felix Söderman DD2360 HT23
 ## Exercise 1 - Your first CUDA program and GPU performance metrics
