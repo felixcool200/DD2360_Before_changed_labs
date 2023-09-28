@@ -1,8 +1,7 @@
 # Assignment 4
 
-Github link: https://github.com/felixcool200/DD2360HT23
-
-##### Felix Söderman DD2360 HT23
+Felix Söderman DD2360 HT23\
+Github: https://github.com/felixcool200/DD2360HT23
 
 ## Exercise 1 -  Thread Scheduling and Execution Efficiency 
 
