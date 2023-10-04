@@ -52,7 +52,6 @@ Github: https://github.com/felixcool200/DD2360HT23
 
     When running NVVP I was able to see that the streams did overlap correctly.
 
-
     ![NVVP4Streams](nvvp4Streams.png)
 
 3. What is the impact of segment size on performance? Present in a plot ( you may choose a large vector and compare 4-8 different segment sizes)
@@ -63,23 +62,39 @@ Github: https://github.com/felixcool200/DD2360HT23
 
 
 
-## Exercise 3 - CUDA Streams
+## Exercise 3 - Pinned Memory and Unified Memory
 
 ### Using part 1
 
 1. What are the differences between pageable memory and pinned memory, what are the tradeoffs?
 
-    Pageable memory can be sent to disk when inactive while pinned memory can not. Pinned memory also speeds up cudaMemcopy since cuda has to make a pinned copy before it can start to copy the memory to the device.
+    <!--    Pageable memory can be sent to disk (swap partition in linux) when there is no more room in memory while pinned memory can not. Pinned memory also speeds up cudaMemcpy since when coping pageable memory cuda has to make a pinned copy of the memory before it can start to copy the memory to the device, otherwise the memory could be paged out while cuda copies the memory which would result in corrupt memory. This means that pageable memory is most likley slower when working with cuda. One draw back to pinned memory is that if the RAM is full when trying to create the pinned the malloc will fail while pagable memory can always move somthing to disk to make space for it.-->
 
-    One draw back is that if the memory is full creating pinned memory can fail since there is no space left to have pinned memory.
+    The distinction between pageable memory and pinned memory lies in their behavior when system memory becomes exhausted. Pageable memory can be swapped to disk (usually to a swap partition in Linux) when there's no available memory, whereas pinned memory cannot. Additionally, pinned memory enhances the performance of cudaMemcpy because, when copying pageable memory, CUDA needs to create a pinned copy of the memory before initiating the transfer to the device. This step is necessary to prevent the memory from being paged out while CUDA is copying it, which otherwise could lead to data corruption. Consequently, pageable memory tends to be slower when working with CUDA.
+
+    However, a drawback of pinned memory is that if the system's RAM is full when attempting to allocate pinned memory, the allocation will fail. In contrast, pageable memory can always resort to moving some data to disk to free up space for new allocations. Pinned memory is also much more expensive to allocate and deallocate than pageable memory.
 
 2. Compare the profiling results between your original code and the new version using pinned memory. Do you see any difference in terms of the breakdown of execution time after changing to pinned memory?
 
+    ![Normal Matrix nvvp](nvvpMatrix.png)
+    ![Pinned Matrix nvvp](nvvpMatrixPinned.png)
+
+    Much Much shorter cudaMalloc time.
+    More time in cudaHostAlloc
+    Memcpy H2D is twise as fast with pinned
+    Memcpy D2H is much faster pinned 660 micro -> 5.5 ms
+    (Check CPU times for alloc/hostAlloc??)
+
+
 3. What is a managed memory? What are the implications of using managed memory?
 
-    Mannaged memory is a shared memory between the CPU and GPU
+    Managed memory or unified memory is a memory management concept that aims to simplify memory management for developers by automating certain aspects of memory allocation and deallocation. The main conecept is to allow both host (CPU) and device (GPU) to read and write to the same memory. This can sometimes be an actual shared memory or a virtaul memory that writes both to host and device memory. 
 
 4. Compare the profiling results between your original code and the new version using managed memory. What do you observe in the profiling results?
 
+    ![Normal Matrix nvvp](nvvpMatrix.png)
+    ![Managed Matrix nvvp](nvvpMatrixUM.png)
 
+
+## Exercise 4 - Heat Equation with using NVIDIA libraries
 
