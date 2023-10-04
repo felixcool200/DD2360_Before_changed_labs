@@ -36,6 +36,7 @@ double timerStop() {
 int main(int argc, char **argv) {
 
   int inputLength, s_seg;
+  bool changeStreams;
   DataType *hostInput1;
   DataType *hostInput2;
   DataType *hostOutput;
@@ -45,21 +46,23 @@ int main(int argc, char **argv) {
   DataType *deviceOutput;
 
   //@@ Insert code below to read in inputLength from args
-  if(argc >= 3) {
-    inputLength = atoi(argv[1]);
-    s_seg = atoi(argv[2]);
+  if(argc >= 4) {
+    changeStreams = atoi(argv[1]);
+    inputLength = atoi(argv[2]);
+    s_seg = atoi(argv[3]);
   }else{
-    printf("%s","Error, no length and s_seg given\n");
+    printf("%s","Error, use changeStreams, Inputlength, s_seg\n");
     return 0;
   }
-  printf("inputlength %d, s_seg %d \t\t", inputLength,s_seg);
+  printf("%d,%d,", inputLength,s_seg);
   //printf("%d, ",inputLength);
   //@@ Insert code below to allocate Host memory for input and output
   //timerStart();
-  hostInput1 = (DataType *)malloc(inputLength * sizeof(DataType));
-  hostInput2 = (DataType *)malloc(inputLength * sizeof(DataType));
-  hostOutput = (DataType *)malloc(inputLength * sizeof(DataType));
-  resultRef  = (DataType *)malloc(inputLength * sizeof(DataType));
+  cudaHostAlloc(&hostInput1, inputLength * sizeof(DataType), cudaHostAllocDefault);
+  cudaHostAlloc(&hostInput2, inputLength * sizeof(DataType), cudaHostAllocDefault);
+  cudaHostAlloc(&hostOutput, inputLength * sizeof(DataType), cudaHostAllocDefault);
+  cudaHostAlloc(&resultRef, inputLength * sizeof(DataType), cudaHostAllocDefault);
+  
   //printf("HostMalloc, cudaMalloc, cudaMemcpyHostToDevice, cudaRun, cudaMemcpyDeviceToHost\n");
   //printf("%f, ",  timerStop());
 
@@ -83,40 +86,77 @@ int main(int argc, char **argv) {
   //printf("%f, ",  timerStop());
 
   timerStart();
-  const int N_STREAMS = (inputLength+s_seg-1)/s_seg;
-  //const int streamSize = inputLength/N_STREAMS;
-  const int streamByte = s_seg * sizeof(DataType);
-  cudaStream_t stream[N_STREAMS];
 
-  for(int streamIndex = 0; streamIndex < N_STREAMS; ++streamIndex){
-      cudaStreamCreate(&stream[streamIndex]);
+  //If we still want 4 streams
+  if(changeStreams == 0){
+    //const int N_STREAMS = (inputLength+s_seg-1)/s_seg;
+    const int N_STREAMS = 4;
+    //const int streamSize = inputLength/N_STREAMS;
+    const int streamByte = s_seg * sizeof(DataType);
+    cudaStream_t stream[N_STREAMS];
+
+    for(int streamIndex = 0; streamIndex < N_STREAMS; ++streamIndex){
+        cudaStreamCreate(&stream[streamIndex]);
+    }
+
+    for(int i = 0; i < ((inputLength)/(4*s_seg));++i){
+      for(int streamIndex = 0; streamIndex < N_STREAMS; ++streamIndex){
+        int offset = ((N_STREAMS*i)+streamIndex) * s_seg;
+        cudaMemcpyAsync(&deviceInput1[offset],&hostInput1[offset],streamByte,cudaMemcpyHostToDevice,stream[streamIndex]);
+        cudaMemcpyAsync(&deviceInput2[offset],&hostInput2[offset],streamByte,cudaMemcpyHostToDevice,stream[streamIndex]);
+        
+        //@@ Initialize the 1D grid and block dimensions here
+        int Dg = (s_seg+TPB-1)/TPB;
+        int Db = TPB;
+
+        //@@ Launch the GPU Kernel here
+        vecAdd<<<dim3(Dg,1,1), dim3(Db,1,1),0,stream[streamIndex]>>>(&deviceInput1[offset],&deviceInput2[offset], &deviceOutput[offset], s_seg);
+        cudaMemcpyAsync(&hostOutput[offset],&deviceOutput[offset],streamByte,cudaMemcpyDeviceToHost,stream[streamIndex]);
+      }
+    }
+    //cudaStreamSynchronize(stream)
+    cudaDeviceSynchronize();
+
+    for(int streamIndex = 0; streamIndex < N_STREAMS; ++streamIndex){
+        cudaStreamDestroy(stream[streamIndex]);
+    }
+
+  }else{
+    //Change amount of streams
+    const int N_STREAMS = (inputLength+s_seg-1)/s_seg;
+    const int streamByte = s_seg * sizeof(DataType);
+    cudaStream_t stream[N_STREAMS];
+
+    for(int streamIndex = 0; streamIndex < N_STREAMS; ++streamIndex){
+        cudaStreamCreate(&stream[streamIndex]);
+    }
+
+    for(int streamIndex = 0; streamIndex < N_STREAMS; ++streamIndex){
+        int offset = streamIndex * s_seg;
+        //printf("Offset: %d\n",offset);
+        //@@ Insert code to below to Copy memory to the GPU here
+        cudaMemcpyAsync(&deviceInput1[offset],&hostInput1[offset],streamByte,cudaMemcpyHostToDevice,stream[streamIndex]);
+        cudaMemcpyAsync(&deviceInput2[offset],&hostInput2[offset],streamByte,cudaMemcpyHostToDevice,stream[streamIndex]);
+        
+        //@@ Initialize the 1D grid and block dimensions here
+        int Dg = (s_seg+TPB-1)/TPB;
+        int Db = TPB;
+
+        //@@ Launch the GPU Kernel here
+        vecAdd<<<dim3(Dg,1,1), dim3(Db,1,1),0,stream[streamIndex]>>>(&deviceInput1[offset],&deviceInput2[offset], &deviceOutput[offset], s_seg);
+        cudaMemcpyAsync(&hostOutput[offset],&deviceOutput[offset],streamByte,cudaMemcpyDeviceToHost,stream[streamIndex]);
+    } 
+    //cudaStreamSynchronize(stream)
+    cudaDeviceSynchronize();
+
+    for(int streamIndex = 0; streamIndex < N_STREAMS; ++streamIndex){
+        cudaStreamDestroy(stream[streamIndex]);
+    }
+
   }
 
-  for(int streamIndex = 0; streamIndex < N_STREAMS; ++streamIndex){
-    int offset = streamIndex * s_seg;
-
-    //@@ Insert code to below to Copy memory to the GPU here
-    cudaMemcpyAsync(&deviceInput1[offset],&hostInput1[offset],streamByte,cudaMemcpyHostToDevice,stream[streamIndex]);
-    cudaMemcpyAsync(&deviceInput2[offset],&hostInput2[offset],streamByte,cudaMemcpyHostToDevice,stream[streamIndex]);
-    
-    //@@ Initialize the 1D grid and block dimensions here
-    int Dg = (s_seg+TPB-1)/TPB;
-    int Db = TPB;
-
-    //@@ Launch the GPU Kernel here
-    vecAdd<<<dim3(Dg,1,1), dim3(Db,1,1),0,stream[streamIndex]>>>(&deviceInput1[offset],&deviceInput2[offset], &deviceOutput[offset], s_seg);
-    cudaMemcpyAsync(&hostOutput[offset],&deviceOutput[offset],streamByte,cudaMemcpyDeviceToHost,stream[streamIndex]);
-  }
-
-  //cudaStreamSynchronize(stream)
-  cudaDeviceSynchronize();
-
-  for(int streamIndex = 0; streamIndex < N_STREAMS; ++streamIndex){
-      cudaStreamDestroy(stream[streamIndex]);
-  }
-
-
-  printf("Total time %f\n",  timerStop());
+  //printf("Total time %f\n",  timerStop());
+  printf("%f\n",  timerStop());
   //@@ Insert code below to compare the output with the reference
 
   bool diff = false;
@@ -138,10 +178,10 @@ int main(int argc, char **argv) {
   cudaFree(deviceOutput);
 
   //@@ Free the CPU memory here
-  free(hostInput1);
-  free(hostInput2);
-  free(hostOutput);
-  free(resultRef);
+  cudaFreeHost(hostInput1);
+  cudaFreeHost(hostInput2);
+  cudaFreeHost(hostOutput);
+  cudaFreeHost(resultRef);
 
 return 0;
 }

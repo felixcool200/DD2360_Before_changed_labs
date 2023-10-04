@@ -282,28 +282,46 @@ Github: https://github.com/felixcool200/DD2360HT23
 1. What limitations this paper proposes to address?
 
     **ANSWER:**
-    This paper tries to address the problem of (relativly) low high speed memory on GPUs. Which can limits the GPU core to be fully utilized if each thread needs to read much data from the global memory.
+    <!--This paper tries to address the problem of (relativly) low high speed memory on GPUs. Which can limits the GPU core to be fully utilized if each thread needs to read much data from the global memory.-->
+
+    The paper proposes to address the limitation of limited GPU memory capacity for high-throughput applications. Which can increse the utilization of the GPU cores.
 
 2. What workloads/applications does it target?
 
     **ANSWER:**
-    The paper targets deep learning and HPC workloads since they are sterotypical workloads that have high memory usage, but any workload which requires much data to be read is applicable.
+    <!--The paper targets deep learning and HPC workloads since they are sterotypical workloads that have high memory usage, but any workload which requires much data to be read is applicable.-->
+
+    Buddy Compression targets high-throughput applications like HPC and deep learning workloads that require large memory capacity.
 
 3. What new architectural changes does it propose? Why it can address the targeted limitation?
 
     **ANSWER:**
-    They propose of this paper is to evaluate and check what memory compression algorithms would work as a memory-expansion alternative. And to be used as a slower-but-larger buddy memory connected thorugh a high-bandwidth interconnect, such as NVLink.
+    <!--They propose of this paper is to evaluate and check what memory compression algorithms would work as a memory-expansion alternative. And to be used as a slower-but-larger buddy memory connected thorugh a high-bandwidth interconnect, such as NVLink.-->
+
+    Buddy Compression proposes a new architectural change that enables memory expansion by compressing memory entries and storing them in a separate buddy memory connected through a high-bandwidth interconnect, such as NVLink. This approach can address the targeted limitation by effectively increasing memory capacity without requiring additional hardware or significant changes to the existing system.
 
 4. What applications are evaluated and how did they setup the evolution environment (e.g., simulators, real hardware, etc)?
 
     **ANSWER:**
-    The mayority of their testing was using 16 different HPC/Deep learning benchmarks that where tested using multiple algortims and while messuring many different things. Thus mostly simulators where used. (They did compare UM and buddy compression on real hardware in one test).
+    The paper evaluates 16 different HPC/Deep learning benchmarks that where tested using multiple algortims. They mostly used simulators but also real hardware, an example is that they compared Unifed memory and buddy compression on real hardware. The evaluation environment is set up using NVIDIA GPUs and the CUDA programming model.
 
 5. Do you have any doubts or comments on their proposed solutions?
 
     **ANSWER:**
-    I myself does not any any doubts, but I am sceptical to how much of an improvment this will be. As it seems to add a lot of complexity whist giving a quite small gain.  
+    <!--I myself does not any any doubts, but I am sceptical to how much of an improvment this will be. As it seems to add a lot of complexity whist giving a quite small gain.--> 
+
+    I do not have any doubts or comments on their proposed solutions. However, it is important to note that the effectiveness of Buddy Compression may vary depending on the specific workload and system configuration. Thus one should keep in mind that it adds a lot of complexity may only result in immeasurable gains.
 
 ## References
 
 [1] Choukse, E., Sullivan, M. B., O’Connor, M., Erez, M., Pool, J., Nellans, D., & Keckler, S. W. (2020, May). Buddy compression: Enabling larger memory for deep learning and HPC workloads on GPUs. In 2020 ACM/IEEE 47th Annual International Symposium on Computer Architecture (ISCA) (pp. 926-939). IEEE.
+
+
+<!--
+1. The paper proposes to address the limitation of limited GPU memory capacity for high-throughput applications like HPC and deep learning workloads.
+2. Buddy Compression targets high-throughput applications like HPC and deep learning workloads that require large memory capacity.
+3. Buddy Compression proposes a new architectural change that enables memory expansion by compressing memory entries and storing them in a separate buddy memory. This approach can address the targeted limitation by effectively increasing memory capacity without requiring additional hardware or significant changes to the existing system.
+4. The paper evaluates several applications, including deep learning training workloads and HPC simulations, using both simulators and real hardware. The evaluation environment is set up using NVIDIA GPUs and the CUDA programming model.
+5. As an expert on the content of the PDF, I do not have any doubts or comments on their proposed solutions. However, it is important to note that the effectiveness of Buddy Compression may vary depending on the specific workload and system configuration.
+
+-->
