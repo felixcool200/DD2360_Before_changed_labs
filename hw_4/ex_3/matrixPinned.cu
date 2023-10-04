@@ -1,3 +1,4 @@
+
 #include <stdio.h>
 #include <sys/time.h>
 
@@ -85,9 +86,13 @@ int main(int argc, char **argv) {
     printf("Input matrix dim (%d x %d) (%d x %d) (%d x %d)\n", numARows, numAColumns, numBRows, numBColumns, numCRows, numCColumns);
   }
   //@@ Insert code below to allocate Host memory for input and output
-  hostA = (DataType *)malloc(numARows*numAColumns*sizeof(DataType));
+  cudaMallocHost((void**)&hostA, numARows*numAColumns * sizeof(DataType), cudaHostAllocDefault);
+  cudaMallocHost((void**)&hostB, numBRows*numBColumns * sizeof(DataType), cudaHostAllocDefault);
+  cudaMallocHost((void**)&hostC, numCRows*numCColumns * sizeof(DataType), cudaHostAllocDefault);
+
+  /*hostA = (DataType *)malloc(numARows*numAColumns*sizeof(DataType));
   hostB = (DataType *)malloc(numBRows*numBColumns*sizeof(DataType));
-  hostC = (DataType *)malloc(numCRows*numCColumns*sizeof(DataType));
+  hostC = (DataType *)malloc(numCRows*numCColumns*sizeof(DataType));*/
   resultRef = (DataType *)malloc(numCRows*numCColumns*sizeof(DataType));
   //@@ Insert code below to initialize hostA and hostB to random numbers, and create reference result in CPU
 
@@ -183,9 +188,9 @@ int main(int argc, char **argv) {
   cudaFree(deviceC);
 
   //@@ Free the CPU memory here
-  free(hostA);
-  free(hostB);
-  free(hostC);
+  cudaFreeHost(hostA);
+  cudaFreeHost(hostB);
+  cudaFreeHost(hostC);
   free(resultRef);
 
   Totaltime = timerStop();

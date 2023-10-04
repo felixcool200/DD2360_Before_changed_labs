@@ -88,7 +88,7 @@ Github: https://github.com/felixcool200/DD2360HT23
 
 3. What is a managed memory? What are the implications of using managed memory?
 
-    Managed memory or unified memory is a memory management concept that aims to simplify memory management for developers by automating certain aspects of memory allocation and deallocation. The main conecept is to allow both host (CPU) and device (GPU) to read and write to the same memory. This can sometimes be an actual shared memory or a virtaul memory that writes both to host and device memory. 
+    Managed memory or unified memory is a memory management concept that aims to simplify memory management for developers by automating certain aspects of memory allocation and deallocation. The main conecept is to allow both host (CPU) and device (GPU) to read and write to the same memory. This can sometimes be an actual shared memory or a virtaul memory that writes both to host and device memory automatically. 
 
 4. Compare the profiling results between your original code and the new version using managed memory. What do you observe in the profiling results?
 

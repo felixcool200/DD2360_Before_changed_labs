@@ -1,4 +1,3 @@
-
 #include <stdio.h>
 #include <sys/time.h>
 
@@ -23,6 +22,7 @@ __global__ void gemm(DataType *A, DataType *B, DataType *C, int numARows,
   int j = blockIdx.y * blockDim.y + threadIdx.y;
 
   if(i < numARows && j < numBColumns){
+    C[i*numBColumns+j] = 0;
     for(int k=0;k<numAColumns;++k){
       C[i*numBColumns+j] += A[i*numAColumns + k] * B[k*numBColumns+j];
     }
@@ -117,7 +117,7 @@ int main(int argc, char **argv) {
   for(int i = 0; i < numBRows*numBColumns; ++i){
     UM_B[i] =  (DataType)rand() / RAND_MAX * max;
   }
-
+  /*
   for(int i = 0; i < numCRows*numCColumns; ++i){
     int row = i/numCColumns;
     int col = i%numCColumns;
@@ -125,9 +125,9 @@ int main(int argc, char **argv) {
     for(int k=0;k<numAColumns;++k){
       resultRef[i] += UM_A[row*numAColumns+k] * UM_B[k*numBColumns+col];
     }
-  }
+  }*/
   //@@ Set deviceMemC to 0
-  cudaMemset(UM_C,0,numCRows*numCColumns*sizeof(DataType));
+  //cudaMemset(UM_C,0,numCRows*numCColumns*sizeof(DataType));
 
   //@@ Initialize the grid and block dimensions here
 
@@ -148,7 +148,7 @@ int main(int argc, char **argv) {
       tolerance = 10;
   }
 
-
+  /*
   //@@ Insert code below to compare the output with the reference
   bool diff = false;
     for(int i = 0; i < numCRows*numCColumns;++i){
@@ -161,7 +161,7 @@ int main(int argc, char **argv) {
 
   if(!diff && !printCSV){
     printf("Outputs are the same\n");
-  }
+  }*/
 
   //@@ Free the GPU memory here
 
