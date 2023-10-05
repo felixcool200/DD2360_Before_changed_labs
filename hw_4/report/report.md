@@ -92,9 +92,29 @@ Github: https://github.com/felixcool200/DD2360HT23
 
 4. Compare the profiling results between your original code and the new version using managed memory. What do you observe in the profiling results?
 
+    The outputs looked like this:
     ![Normal Matrix nvvp](nvvpMatrix.png)
     ![Managed Matrix nvvp](nvvpMatrixUM.png)
 
+    Comparing the two profiling outputs proves challenging due to their distinct profiling targets. The primary reason for this distinction lies in the exclusive profiling of the CUDA library, which results in the absence of CPU malloc during the initial allocation. However, when managed memory is employed one can observe both CPU malloc and the CPU filling variables with random data. Consequently, the occurrence of numerous blue CPU Page faults can be attributed to the CPU attempting to populate the new memory before its allocation. This phenomenon aligns with the statement found on NVIDIA's website, which states, "managed memory may not be physically allocated when cudaMallocManaged() returns" [1].
 
 ## Exercise 4 - Heat Equation with using NVIDIA libraries
 
+1. Run the program with different dimX values. For each one, approximate the FLOPS (floating-point operation per second) achieved in computing the SMPV (sparse matrix multiplication). Report FLOPS at different input sizes in a FLOPS. What do you see compared to the peak throughput you report in Lab2?
+    
+    ![Flops](flops.png)
+    
+    The calculated theoretical maximum throughput stands at approximately 8 TFLOPS. However, this figure falls significantly short of the maximum achievable throughput, primarily owing to the iterative nature of the algorithm, which restricts the GPU to short bursts of activity. This limitation also explains why the throughput increases with an increase in dimX, as it enables better utilization of the GPU.
+
+2. Run the program with dimX=128 and vary nsteps from 100 to 10000. Plot the relative error of the approximation at different nstep. What do you observe?
+
+    ![Error](error.png)
+    Increasing the number of iterations evidently enhances precision.
+
+3. Compare the performance with and without the prefetching in Unified Memory. How is the performance impact? [Optional: using nvprof to get metrics on UM]
+
+    
+
+
+[1] _Mark Harris_, "Unified Memory for CUDA Beginners", Jun 19 2017
+ https://developer.nvidia.com/blog/unified-memory-cuda-beginners/

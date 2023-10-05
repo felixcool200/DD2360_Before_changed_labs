@@ -41,25 +41,25 @@ Github: https://github.com/felixcool200/DD2360HT23
     **ANSWER:**
     One can clearly see that the machines running GPUs are much more power efficient than those who does not.
 
-    1	Frontier - RMax = 1194 [PFlop/s], Power = 22703 [kW] => Power efficiency = 52.59 [Gflop/watts]
+    1	Frontier - RMax = 1194 [PFLOPS], Power = 22703 [kW] => Power efficiency = 52.59 [GFLOPS/watts]
 
-    2 Supercomputer Fugaku - RMax = 442.01 [PFlops/s], Power = 29,899.23 kW [kW]  => Power efficiency = 14.78 [Gflop/watts]
+    2 Supercomputer Fugaku - RMax = 442.01 [PFLOPS], Power = 29,899.23 kW [kW]  => Power efficiency = 14.78 [GFLOPS/watts]
 
-    3	LUMI - RMax = 309.10 [PFlop], Power = 6015.77 [kW] => Power efficiency = 51.38 [Gflop/watts]
+    3	LUMI - RMax = 309.10 [PFLOPS], Power = 6015.77 [kW] => Power efficiency = 51.38 [GFLOPS/watts]
 
-    4	Leonardo - RMax = 238.70 [PFlop], Power = 7404.40 [kW] => Power efficiency = 32.24 [Gflop/watts]
+    4	Leonardo - RMax = 238.70 [PFLOPS], Power = 7404.40 [kW] => Power efficiency = 32.24 [GFLOPS/watts]
     
-    5	Summit - RMax = 148.60 [PFlop], Power = 10096.00 [kW] => Power efficiency = 14.72 [Gflop/watts]
+    5	Summit - RMax = 148.60 [PFLOPS], Power = 10096.00 [kW] => Power efficiency = 14.72 [GFLOPS/watts]
 
-    6	Sierra - RMax = 94.64 [PFlop], Power = 7438.28 [kW] => Power efficiency = 12.72 [Gflop/watts]
+    6	Sierra - RMax = 94.64 [PFLOPS], Power = 7438.28 [kW] => Power efficiency = 12.72 [GFLOPS/watts]
 
-    7	Sunway TaihuLight - RMax = 93.01 [PFlop], Power = 15371 [kW] => Power efficiency = 6.05 [Gflop/watts]
+    7	Sunway TaihuLight - RMax = 93.01 [PFLOPS], Power = 15371 [kW] => Power efficiency = 6.05 [GFLOPS/watts]
 
-    8	Perlmutter - RMax = 70.87 [PFlop], Power = 2589 [kW] => Power efficiency = 27.37 [Gflop/watts]
+    8	Perlmutter - RMax = 70.87 [PFLOPS], Power = 2589 [kW] => Power efficiency = 27.37 [GFLOPS/watts]
 
-    9	Selene - RMax = 63.46 [PFlop], Power = 2646 [kW] => Power efficiency = 23.98 [Gflop/watts]
+    9	Selene - RMax = 63.46 [PFLOPS], Power = 2646 [kW] => Power efficiency = 23.98 [GFLOPS/watts]
 
-    10 Tianhe-2A - RMax = 61.44 [PFlop], Power = 18482 [kW] => Power efficiency = 3.32 [Gflop/watts]
+    10 Tianhe-2A - RMax = 61.44 [PFLOPS], Power = 18482 [kW] => Power efficiency = 3.32 [GFLOPS/watts]
 
 ## Exercise 2 - Device Query
 1. The screenshot of the output from you running deviceQuery test.
@@ -108,7 +108,7 @@ Github: https://github.com/felixcool200/DD2360HT23
     **ANSWER:**
     I decided to look at the consumer grade GPUs and there the three latest GPU arcitecture are Ada Lovelace (4000-series), Ampere (3000-series) and Turing (2000 -series). I decided to test the three best customer grade cards from each generation.
 
-    | Card              | RTX 2080 Ti RTX | RTX 3090 Ti RTX | GeForce RTX 4090 |
+    | Card              | RTX 2080 Ti     | RTX 3090 Ti     | GeForce RTX 4090 |
     |-------------------|-----------------|-----------------|------------------|
     | L2 Cache (MB)     | 5.5 MB          | 6 MB            | 72 MB            |
     | Tensor Cores      | 544             | 336             | 512              |
@@ -124,22 +124,23 @@ Github: https://github.com/felixcool200/DD2360HT23
 2. List the number of SMs, the number of cores per SM, the clock frequency and calculate their theoretical peak throughput.
 
     **ANSWER:**
-    Throughout is calulcated as ```SMs * SPs * Clock (GHz) * 1/1000 = Troughput (Tflops)```
+    Throughout is calulcated as ```SMs * SPs * FLOPS Per core * Clock (GHz) * 1/1000 = Throughput (TFLOPS)```
 
-    | Card                  | RTX 2080 Ti RTX | RTX 3090 Ti RTX | GeForce RTX 4090 |
-    |-----------------------|-----------------|-----------------|------------------|
-    | SM Count              | 68              | 84              | 128              |
-    | SP Count (Per SM)     | 64              | 128             | 128              |
-    | Boost clock (GHz)     | 1.64 GHz        | 1.86 GHz        | 2.52 GHz         |
-    | Max Troughput (Tflops)| 7.14            | 20.00           | 41.29            |
+    | Card                     | RTX 2080 Ti     | RTX 3090 Ti RTX | RTX 4090         |
+    |--------------------------|-----------------|-----------------|------------------|
+    | SM Count                 | 68              | 84              | 128              |
+    | SP Count (Per SM)        | 64              | 128             | 128              |
+    | Boost clock (GHz)        | 1.55 GHz        | 1.86 GHz        | 2.52 GHz         |
+    | FLOPS per cycle per core | 2               | 2               | 2                |
+    | Max Troughput (TFLOPS)   | 13.45           | 40.00           | 82.58            |
 
 
 3. Compare (1) and (2) with the NVIDIA GPU that you are using for the course. 
 
     **ANSWER:**
-    I run three different GPUs in the course (1080 ti, 1050 ti Max-Q and Google colab (T4)). I will compare them with a GTX 1080 Ti
+    I run three different GPUs in the course (1080 ti, 1050 ti Max-Q and Google colab (T4)). I will compare them with a GTX 1080 Ti (and somewhat T4)
 
-    | Card                  | RTX 1080 Ti RTX |
+    | Card                  | GTX 1080 Ti     |
     |-----------------------|-----------------|
     | L2 Cache (MB)         | 2.75 MB         |
     | Tensor Cores          | 0               |
@@ -151,7 +152,9 @@ Github: https://github.com/felixcool200/DD2360HT23
     | Bus Interface         | PCIe 3.0 x16    |
     | Global memory (GB)    | 11 GB           |
     | Memory type           | GDDR5X          |
-    | Max Troughput (Tflops)| 5.66            |
+    | Max Troughput (TFLOPS)| 5.66            |
+
+    For later analysis in labb 4 the google colab Nvidia T4 get a theoretical throughput of ```40 * 64 * 2 * 1.59 * 1/1000 = 8.14 TFLOPS```
 
 ## Exercise 4 - Rodinia CUDA benchmarks and Profiling
 
